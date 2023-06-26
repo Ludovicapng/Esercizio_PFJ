@@ -1,0 +1,326 @@
+use biblioteca;
+CREATE TABLE autori (
+    CodiceA INT PRIMARY KEY,
+    NomeA VARCHAR(50),
+    CognomeA VARCHAR(50),
+    AnnoN INT,
+    AnnoM INT,
+    Sesso VARCHAR(1),
+    Nazione VARCHAR(50)
+);
+
+CREATE TABLE libri (
+    CodiceR INT PRIMARY KEY,
+    Titolo VARCHAR(100),
+    CodiceA INT,
+    numPag INT,
+    Anno INT,
+    FOREIGN KEY (CodiceA) REFERENCES autori(CodiceA)
+);
+
+insert into autori (CodiceA, NomeA, CognomeA, AnnoN, AnnoM, Sesso, Nazione) values
+(718230, "Alessandro", "Manzoni", 1785, 1873, "M", "Italia"),
+(717928, "Lev", "Tolstoj", 1828, 1910, "M", "Russia"),
+(152334, "Ernest", "Hemingway", 1899, 1961, "M", "America"),
+(872364, "Umberto", "Eco", 1932, 2016, "M", "Italia"),
+(324321, "Virginia", "Woolf", 1882, 1941, "F", "Inghilterra"),
+(898902, "Agatha", "Christie", 1890, 1976, "F", "Inghilterra");
+
+insert into autori (CodiceA, NomeA, CognomeA, AnnoN, Sesso, Nazione) values
+(728263, "Bruno", "Vespa", 1944, "M", "Italia"),
+(375940, "Stephen", "King", 1947, "M", "America"),
+(871378, "Susanna", "Tamaro", 1957, "F", "Italia");
+
+insert into libri (CodiceR, Titolo, CodiceA,numPag,Anno) values
+(1, 'I Promessi Sposi',718230,600,1827),
+(2, 'Storia della colonna infame',718230,700,1843),
+(3, 'Guerra e pace',717928,600,1876),
+(4, 'Anna Karenina',717928,700,1877),
+(5, 'Donne al potere',728263,600,2022),
+(7, 'La grande tempesta',728263,700,2022),
+(8, 'Misery',375940,670,1987),
+(9, 'IT',375940,600,1986),
+(10, 'Shining',375940,670,1977),
+(11, 'Il vecchio e il mare',152334,760,1952),
+(12, 'Per chi suona la campana',152334,700,1940),
+(13, 'Fiesta',152334,700,1926),
+(14, 'Il nome della rosa',872364,600,1980),
+(15, 'Il pendolo di Foucault',872364,670,1988),
+(16, 'Va dove ti porta il cuore',871378,760,1944),
+(17, 'Gita al faro',324321,600,1927),
+(18, 'Orlando',324321,700,1928),
+(20, "Assassinio sull'Orient Express",898902,670,1934),
+(21, "Sipario",898902,760,1975);
+
+-- 1. estrarre numero di libri per nazione in ordine decrescente di numero
+SELECT count(libri.CodiceR) AS "numero di libri", autori.nazione
+FROM libri, autori
+WHERE libri.CodiceA = autori.CodiceA
+GROUP BY nazione
+ORDER BY "numero di libri" DESC;
+
+-- 2. estrarre gli autori/autrici italiani o inglesi che hanno scritto piu' di 1 libro e che sono ancora vivi.
+SELECT COUNT(libri.CodiceR) AS num, autori.NomeA, autori.CognomeA, autori.Nazione
+FROM libri
+JOIN autori ON libri.CodiceA = autori.CodiceA
+WHERE autori.Nazione IN ('Italia', 'Inghilterra') AND autori.AnnoM IS NULL
+GROUP BY autori.NomeA, autori.CognomeA, autori.Nazione
+HAVING COUNT(libri.CodiceR) > 1;
+
+-- 3. estrarre i romanzi di autori/ci americani nati dopo il 1945 e i romanzi di autori italiani che finiscono con la lettera o
+SELECT libri.Titolo
+FROM libri
+JOIN autori ON libri.CodiceA = autori.CodiceA
+WHERE autori.nazione = "America" && autori.AnnoN > 1945 ||
+autori.nazione = "Italia" && autori.NomeA LIKE "%o";
+
+-- 4  estrarre i romanzi che sono stati scritti piu' di 30 anni fa.
+SELECT libri.Titolo
+FROM libri
+WHERE libri.Anno < 1993;
+
+-- 5. estrarre la lista completa dei libri di autrici
+SELECT libri.Titolo
+FROM libri
+JOIN autori ON libri.CodiceA = autori.CodiceA 
+WHERE autori.Sesso = "F";
+
+-- 6. estrarre i libri con il titolo piu' lungo di 8 caratteri
+SELECT libri.Titolo
+FROM libri
+WHERE LENGTH(Libri.Titolo) > 8;
+
+-- 7. estrarre i libri con piu' di 100 pagine di autori/autrici russi e italiani 
+SELECT libri.Titolo
+FROM libri, autori
+WHERE libri.CodiceA = autori.CodiceA AND
+libri.numPag > 100 && autori.nazione IN ("Italia", "Russia");
+
+-- 8. estrarre libri con meno di 200 pagine e titolo che inizia con la lettera i.
+SELECT libri.Titolo
+FROM libri
+WHERE numPag < 200 && Titolo LIKE "I%";
+
+-- 9 estrarre i libri coi dati dei relativi di autori pubblicati tra il 1960 e il 2000
+SELECT libri.Titolo, autori.*
+FROM libri, autori
+WHERE libri.CodiceA = autori.CodiceA AND
+libri.Anno BETWEEN 1960 AND 2000;
+
+-- 10. ottenere il numero di autori con i loro dati che hanno scritto piu' di 2 libri 
+SELECT COUNT(*) AS "Numero Autori", autori.*
+FROM autori
+JOIN libri ON autori.CodiceA = libri.CodiceA
+GROUP BY autori.CodiceA, autori.NomeA, autori.CognomeA, autori.AnnoN, autori.AnnoM, autori.Sesso, autori.Nazione
+HAVING COUNT(libri.CodiceR) > 2;
+
+create table Genere (
+codiceG INT PRIMARY KEY,
+descrizione VARCHAR(50)
+);
+
+insert into Genere values
+(1, "giallo"),
+(2, "horror"),
+(3, "storico"),
+(4, "romanzo");
+
+alter table libri
+add column codiceG int;
+
+alter table libri
+add foreign key (codiceG) references Genere(codiceG);
+
+update libri
+set CodiceG = case Titolo
+    WHEN 'I promessi sposi' THEN 3 -- storico
+    WHEN 'Storia della colonna infame' THEN 3 -- storico
+    WHEN 'Guerra e pace' THEN 3 -- storico
+    WHEN 'Anna Karenina' THEN 4 -- romanzo
+    WHEN 'Donne al potere' THEN 4 -- romanzo
+    WHEN 'La grande tempesta' THEN 4 -- romanzo
+    WHEN 'Misery' THEN 2 -- horror
+    WHEN 'IT' THEN 2 -- horror
+    WHEN 'Shining' THEN 2 -- horror
+    WHEN 'Il vecchio e il mare' THEN 4 -- romanzo
+    WHEN 'Per chi suona la campana' THEN 4 -- romanzo
+    WHEN 'Fiesta' THEN 4 -- romanzo
+    WHEN 'Il nome della rosa' THEN 1 -- giallo
+    WHEN 'Il pendolo di Foucault' THEN 4 -- romanzo
+    WHEN 'Va dove ti porta il cuore' THEN 4 -- romanzo
+    WHEN 'Gita al faro' THEN 4 -- romanzo
+    WHEN 'Orlando' THEN 4 -- romanzo
+    WHEN 'Assassinio sull''Orient Express' THEN 1 -- giallo
+    WHEN 'Sipario' THEN 1 -- giallo
+    ELSE CodiceG
+end;
+
+create table Editore (
+codiceE INT PRIMARY KEY,
+nome VARCHAR(50)
+);
+
+insert into Editore values
+(1, "Rizzoli"),
+(2, "Mondadori");
+
+alter table libri
+add column codiceE int;
+
+alter table libri
+add foreign key (codiceE) references Editore(codiceE);
+
+update libri
+set CodiceE = case Titolo
+    WHEN 'I promessi sposi' THEN 1 -- Rizzoli
+    WHEN 'Storia della colonna infame' THEN 1 -- Rizzoli
+    WHEN 'Guerra e pace' THEN 1 -- Rizzoli
+    WHEN 'Anna Karenina' THEN 1 -- Rizzoli
+    WHEN 'Donne al potere' THEN 1 -- Rizzoli
+    WHEN 'La grande tempesta' THEN 1 -- Rizzoli
+    WHEN 'Misery' THEN 2 -- Mondadori
+    WHEN 'IT' THEN 2 -- Mondadori
+    WHEN 'Shining' THEN 2 -- Mondadori
+    WHEN 'Il vecchio e il mare' THEN 1 -- Rizzoli
+    WHEN 'Per chi suona la campana' THEN 1 -- Rizzoli
+    WHEN 'Fiesta' THEN 1 -- Rizzoli
+    WHEN 'Il nome della rosa' THEN 1 -- Rizzoli
+    WHEN 'Il pendolo di Foucault' THEN 1 -- Rizzoli
+    WHEN 'Va dove ti porta il cuore' THEN 1 -- Rizzoli
+    WHEN 'Gita al faro' THEN 1 -- Rizzoli
+    WHEN 'Orlando' THEN 1 -- Rizzoli
+    WHEN 'Assassinio sull''Orient Express' THEN 1 -- Rizzoli
+    WHEN 'Sipario' THEN 1 -- Rizzoli
+    ELSE CodiceE
+end;
+
+-- 1. estrarre il numero di autori e specificando l'autore con piu ' di un libro scritto di genere gialli o romanzi
+SELECT count(autori.codiceA) "Numero libri", autori.nomeA Nome, autori.cognomeA Cognome, genere.descrizione Genere
+FROM autori, libri, genere
+WHERE autori.codiceA = libri.codiceA AND genere.codiceG = libri.codiceG AND
+Genere.descrizione IN ("giallo", "romanzo")
+GROUP BY autori.nomeA, autori.cognomeA, genere.descrizione
+HAVING count(autori.codiceA) > 1;
+
+-- 2. estrarre i libri di genere horror di autori viventi
+SELECT libri.titolo, autori.nomeA Nome, autori.cognomeA Cognome
+FROM autori, libri, genere
+WHERE autori.codiceA = libri.codiceA AND genere.codiceG = libri.codiceG AND
+Genere.descrizione = "horror" AND autori.annoM IS NULL
+GROUP BY libri.titolo, autori.nomeA, autori.cognomeA, genere.descrizione;
+
+-- 3. estrarre  libri di genere gialli o romanzi entrambi di autori maschili con editore rizzoli
+SELECT libri.titolo, autori.nomeA Nome, autori.cognomeA Cognome
+FROM autori, libri, genere, editore
+WHERE autori.codiceA = libri.codiceA AND
+genere.codiceG = libri.codiceG AND
+editore.codiceE = libri.codiceE AND
+Genere.descrizione IN ("giallo", "romanzo") AND
+autori.Sesso = "M" AND
+editore.nome = "Rizzoli"
+GROUP BY libri.titolo, autori.nomeA, autori.cognomeA, genere.descrizione;
+
+-- 4. estrarre  libri di genere non gialli  di  editori  con nomi lunghi meno di 8 caratteri
+SELECT libri.titolo, genere.descrizione, editore.nome
+FROM libri, genere, editore
+WHERE genere.codiceG = libri.codiceG AND
+libri.codiceE = editore.codiceE AND
+Genere.descrizione NOT LIKE "giallo" AND
+LENGTH(editore.nome) < 8
+GROUP BY libri.titolo, editore.nome, genere.descrizione;
+
+-- 5. estrarre  libri di genere non romazi e di  editori  che finiscono per i di autori italiani
+SELECT libri.titolo, genere.descrizione, autori.nomeA, autori.cognomeA
+FROM libri, genere, autori
+WHERE genere.codiceG = libri.codiceG AND
+libri.codiceA = autori.codiceA AND
+Genere.descrizione NOT LIKE "romanzo" AND
+libri.titolo LIKE "%i"AND
+autori.nazione = "Italia"
+GROUP BY libri.titolo, genere.descrizione, autori.nomeA, autori.cognomeA;
+
+-- 6. estrarre l'elenco degli autori che hanno scritto piu' di un libro di genere non horror ordinati per anno di nascita decrescente
+SELECT autori.nomeA, autori.cognomeA, count(libri.codiceA)
+FROM libri, genere, autori
+WHERE genere.codiceG = libri.codiceG AND
+libri.codiceA = autori.codiceA AND
+Genere.descrizione NOT LIKE "horror"
+GROUP BY autori.nomeA, autori.cognomeA
+HAVING count(libri.codiceA) > 1;
+
+-- 7. estrarre il numero di libri di genere romanzo di autori non italiani ordinati per nome autore decrescente
+SELECT count(libri.codiceR), autori.nomeA, autori.cognomeA
+FROM libri, genere, autori
+WHERE genere.codiceG = libri.codiceG AND
+libri.codiceA = autori.codiceA AND
+Genere.descrizione = "romanzo" AND
+autori.nazione NOT LIKE "Italia"
+GROUP BY autori.nomeA, autori.cognomeA
+ORDER BY count(libri.codiceR) DESC;
+
+-- 8. estrarre la lista col numero di libri di genere non horror(es : gialli 2, romanzi 3 etc)  di autori non italiani
+SELECT count(libri.codiceR) numero, genere.descrizione genere, autori.nomeA nome, autori.cognomeA cognome
+FROM libri, genere, autori
+WHERE genere.codiceG = libri.codiceG AND
+libri.codiceA = autori.codiceA AND
+autori.nazione <> "Italia" AND
+genere.descrizione <> "horror"
+GROUP BY genere.descrizione, autori.nomeA, autori.cognomeA
+ORDER BY count(libri.codiceR) ASC;
+
+-- 9. estrarre la lista di editori che hanno pubblicato piu' di 1 libro con l'autore manzoni ordinati per numero crescente
+SELECT editore.nome
+FROM libri, editore, autori
+WHERE editore.codiceE = libri.codiceE AND
+libri.codiceA = autori.codiceA AND
+autori.nomeA = "Alessandro" && autori.cognomeA = "Manzoni"
+GROUP BY editore.nome
+HAVING count(libri.codiceR) > 1
+ORDER BY count(libri.codiceR) ASC;
+
+-- 10. estrarre la lista di  libri che hanno lunghezza del titolo  maggiore di 7 e che sono stati pubblicati da Mondadori
+SELECT libri.titolo
+FROM libri, editore
+WHERE editore.codiceE = libri.codiceE AND
+LENGTH(libri.titolo) > 7 && editore.nome = "Mondadori"
+GROUP BY libri.titolo;
+
+-- 11. estrarre la lista degli autori che hanno scritto almeno un libro con titolo lungo  meno di 10 lettere e numero di pagine compreso tra 10 e 500
+SELECT autori.nomeA, autori.cognomeA
+FROM libri, autori
+WHERE autori.codiceA = libri.codiceA AND
+LENGTH(libri.titolo) < 10 && libri.numPag BETWEEN 10 AND 500
+GROUP BY autori.nomeA, autori.cognomeA
+HAVING count(libri.codiceR) > 1;
+
+-- 12. aggiungere alla tabella editore il campo sede e valorizzarlo con 'Milano' per Mondadori e 'Roma' per Rizzoli 
+alter table Editore
+add column sede varchar(250);
+
+update Editore
+set sede = "Milano"
+where nome = "Mondadori";
+
+update Editore
+set sede = "Roma"
+where nome = "Rizzoli";
+
+-- 13. estrarre la lista degli autori non americani estraendo nome, id e data di morte, nel caso di autori deceduti scrivere la stringa 'deceduto', nel caso
+-- di autore vivente scrivere 'in vita' .
+SELECT autori.nomeA, autori.codiceA, autori.AnnoM,
+CASE
+WHEN autori.AnnoM IS NULL THEN "in vita"
+ELSE "deceduto" END AS Stato
+FROM autori
+WHERE autori.nazione <> "America";
+
+-- 14. estrarre la lista degli autori non americani estraendo nome, id e data di morte, nel caso di -- autori deceduti scrivere la stringa 'deceduto/a' a seconda del sesso, nel caso
+SELECT autori.nomeA, autori.codiceA, autori.AnnoM,
+CASE
+WHEN autori.AnnoM IS NOT NULL && autori.Sesso = "F" THEN "deceduta"
+WHEN autori.AnnoM IS NOT NULL && autori.Sesso = "M" THEN "deceduto"
+ELSE "in vita" END AS Stato
+FROM autori
+WHERE autori.nazione <> "America";
+
+
